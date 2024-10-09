@@ -1,3 +1,4 @@
 *.code-workspace
 .env
 /tmp
+.DS_Store
