@@ -1,0 +1,9 @@
+# Config file for Air live-reloader
+[build]
+bin = "tmp/main"    # Binary name (stored in the tmp folder)
+cmd = "go run cmd/api/main.go"    # Build command pointing to the main.go file
+exclude_dir = ["vendor", "tmp"]  # Exclude vendor and tmp directories
+full_bin = "./tmp/main"    # Full binary path (output binary)
+
+[log]
+level = "info"    # Log level
