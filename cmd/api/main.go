@@ -4,42 +4,46 @@ package main
 import (
 	"context"
 	"inventory_management/api/handler"
-	product_repository "inventory_management/internal/repository"
+	"inventory_management/internal/repository"
 	"inventory_management/internal/usecase"
 	"inventory_management/pkg/db"
-	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"net/http"
+
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	// Initialize DB connection
-	db, sqlDB := db.InitDB()
 
-	// Initialize repository, usecase and handler
-	productRepo := product_repository.NewPostgresProductRepository(db)
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	// Initialize DB connection
+	db, sqlDB := db.InitDB(false)
+	if db == nil || sqlDB == nil {
+		log.Fatal("Failed to initialize the database.")
+	}
+
+	// Initialize repository, use case, and handler
+	productRepo := repository.NewPostgresProductRepository(db)
 	productUsecase := usecase.NewProductUsecase(productRepo)
 	productHandler := handler.NewProductHandler(productUsecase)
 
-	// Setup Gin
-	router := gin.Default()
+	// Setup the router by calling the new SetupRouter function
+	router := SetupRouter(productHandler)
 
-	// Define Routes
-	router.POST("/products", productHandler.CreateProduct)
-	router.GET("/products/:id", productHandler.GetProduct)
-
-	// Create the http.Server with the Gin router as its handler
+	// Create the HTTP server with the Gin router as its handler
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: router,
 	}
 
-	// Start the server in a goroutine so that it doesn't block the graceful shutdown handling
+	// Start the server in a goroutine so that it doesn't block graceful shutdown handling
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
@@ -52,8 +56,10 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM) // Listen for SIGINT and SIGTERM
 
 	// Block until a signal is received
-	<-quit
-	log.Println("Shutting down server...")
+	sig := <-quit
+	log.WithFields(log.Fields{
+		"signal": sig,
+	}).Println("Received shutdown signal, shutting down server...")
 
 	// Create a context with a timeout to allow for graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -61,7 +67,9 @@ func main() {
 
 	// Close the database connection
 	if err := sqlDB.Close(); err != nil {
-		log.Fatalf("Failed to close database connection: %v", err)
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Fatal("Failed to close database connection")
 	}
 
 	log.Println("Server and database connection closed gracefully")

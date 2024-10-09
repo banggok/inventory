@@ -2,3 +2,6 @@
 .env
 /tmp
 .DS_Store
+coverage.html
+coverage.out
+ginkgo-failures.json

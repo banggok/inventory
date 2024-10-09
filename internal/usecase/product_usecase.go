@@ -1,14 +1,13 @@
-// /internal/usecase/product/usecase.go
+// /internal/usecase/product_usecase.go
 package usecase
 
 import (
-	"inventory_management/api/handler/dto"
 	"inventory_management/internal/entity"
 	"inventory_management/internal/repository"
 )
 
 type ProductUsecase interface {
-	CreateProduct(dto dto.CreateProductRequest) (*entity.Product, error)
+	CreateProduct(name string) (*entity.Product, error)
 	GetProductByID(id uint) (*entity.Product, error)
 }
 
@@ -20,12 +19,12 @@ func NewProductUsecase(repo repository.PostgresProductRepository) ProductUsecase
 	return &productUsecase{productRepo: repo}
 }
 
-func (u *productUsecase) CreateProduct(dto dto.CreateProductRequest) (*entity.Product, error) {
-	p := &entity.Product{
-		Name: dto.Name,
+func (u *productUsecase) CreateProduct(name string) (*entity.Product, error) {
+	p, err := entity.NewProduct(name)
+	if err != nil {
+		return nil, err
 	}
-	p.BeforeCreate()
-	err := u.productRepo.Save(p)
+	err = u.productRepo.Save(p)
 	if err != nil {
 		return nil, err
 	}

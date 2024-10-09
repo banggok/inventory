@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -16,17 +15,46 @@ import (
 
 var DB *gorm.DB
 
-func InitDB() (*gorm.DB, *sql.DB) {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file")
+// Static database configuration for tests
+var testDBConfig = struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DBName   string
+	SSLMode  string
+}{
+	Host:     "localhost",
+	Port:     5432,
+	User:     "postgres",     // Change to your development user
+	Password: "yourpassword", // Change to your development password
+	DBName:   "yourdb",       // Change to your development database
+	SSLMode:  "disable",      // Disable SSL for local dev
+}
+
+func InitDB(useStaticConfig bool) (*gorm.DB, *sql.DB) {
+	var dsn string
+	if useStaticConfig {
+		// Use static configuration for testing or dev environment
+		dsn = fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+			testDBConfig.Host,
+			testDBConfig.Port,
+			testDBConfig.User,
+			testDBConfig.Password,
+			testDBConfig.DBName,
+			testDBConfig.SSLMode,
+		)
+	} else {
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Shanghai",
+			os.Getenv("DB_HOST"),
+			os.Getenv("DB_USER"),
+			os.Getenv("DB_PASSWORD"),
+			os.Getenv("DB_NAME"),
+			os.Getenv("DB_PORT"),
+		)
 	}
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Shanghai",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PORT"),
-	)
+
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		PrepareStmt: true,
@@ -34,10 +62,10 @@ func InitDB() (*gorm.DB, *sql.DB) {
 		Logger: logger.New(
 			log.New(os.Stdout, "\r\n", log.LstdFlags), // log to stdout
 			logger.Config{
-				SlowThreshold:             time.Second, // log slow queries
-				LogLevel:                  logger.Info, // Log level (Info will log all queries)
-				IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound when logging
-				Colorful:                  true,        // Enable colorful output
+				SlowThreshold:             time.Second,   // log slow queries
+				LogLevel:                  logger.Silent, // Log level (Info will log all queries)
+				IgnoreRecordNotFoundError: true,          // Ignore ErrRecordNotFound when logging
+				Colorful:                  true,          // Enable colorful output
 			},
 		),
 	})
