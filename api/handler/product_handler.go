@@ -1,11 +1,10 @@
-// /api/handler/product_handler.go
 package handler
 
 import (
 	"inventory_management/api/handler/dto"
-	transformer "inventory_management/api/transform"
+	helper_handler "inventory_management/api/handler/helper"
+	"inventory_management/api/handler/transformer"
 	"inventory_management/internal/usecase"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -23,41 +22,32 @@ func NewProductHandler(u usecase.ProductUsecase) *ProductHandler {
 
 // CreateProduct handles the creation of a new product
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
-	// Read the request body
-	body, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
 	var req dto.CreateProductRequest
-
-	// Validate the request with custom error messages using the Validate() method
-	if validationErrors := req.Validate(body); validationErrors != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": validationErrors})
+	validationErrors, err := helper_handler.ReadAndValidateRequestBody(c, &req)
+	if validationErrors != nil {
+		helper_handler.SendErrorResponse(c, http.StatusUnprocessableEntity, validationErrors)
 		return
 	}
 
-	// Call usecase to create a new product using the request data
+	if err != nil {
+		helper_handler.SendErrorResponse(c, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Call use case to create a new product
 	product, err := h.productUsecase.CreateProduct(req.Name)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
 			"name":  req.Name,
-		}).Error("Error creating product")
-
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
+		}).Error("Failed to create product")
+		helper_handler.SendErrorResponse(c, http.StatusInternalServerError, "Failed to create product")
 		return
 	}
 
-	// Transform the entity to a response DTO
+	// Transform the entity to response DTO and respond
 	productResponse := transformer.TransformProductEntityToResponse(product)
-
-	// Respond with the created product
-	log.WithFields(log.Fields{
-		"id":   product.ID(),
-		"name": product.Name(),
-	}).Info("Product created successfully")
+	log.WithFields(log.Fields{"id": product.ID(), "name": product.Name()}).Info("Product created successfully")
 	c.JSON(http.StatusCreated, productResponse)
 }
 
@@ -66,91 +56,65 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil || id == 0 {
-		log.WithFields(log.Fields{
-			"error": err,
-			"id":    idParam,
-		}).Warn("Invalid product ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		log.Warnf("Invalid product ID: %v", idParam)
+		helper_handler.SendErrorResponse(c, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
-	// Call usecase to get product by ID
 	product, err := h.productUsecase.GetProductByID(uint(id))
 	if err != nil {
-		// If the error is "product not found", return 404
 		if err.Error() == "product not found" {
-			log.WithFields(log.Fields{
-				"id": id,
-			}).Warn("Product not found")
-			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			log.Warnf("Product not found: %d", id)
+			helper_handler.SendErrorResponse(c, http.StatusNotFound, "Product not found")
 		} else {
-			// Log any other errors and return 500 Internal Server Error
-			log.WithFields(log.Fields{
-				"error": err,
-				"id":    id,
-			}).Error("Error retrieving product from the database")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			log.Errorf("Failed to retrieve product: %d, error: %v", id, err)
+			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, "Failed to retrieve product")
 		}
 		return
 	}
 
-	// Transform the entity to a response DTO
+	// Transform the entity to response DTO and respond
 	productResponse := transformer.TransformProductEntityToResponse(product)
-
-	// Respond with the product
-	log.WithFields(log.Fields{
-		"id":   product.ID(),
-		"name": product.Name(),
-	}).Info("Product retrieved successfully")
+	log.Infof("Product retrieved successfully: ID: %d", product.ID())
 	c.JSON(http.StatusOK, productResponse)
 }
 
 // UpdateProductName handles updating a product's name
 func (h *ProductHandler) UpdateProductName(c *gin.Context) {
-	// Read the request body
-	body, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
 	var req dto.UpdateProductRequest
-
-	// Validate the request with custom error messages using the Validate() method
-	if validationErrors := req.Validate(body); validationErrors != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": validationErrors})
+	validationErrors, err := helper_handler.ReadAndValidateRequestBody(c, &req)
+	if validationErrors != nil {
+		helper_handler.SendErrorResponse(c, http.StatusUnprocessableEntity, validationErrors)
 		return
 	}
 
-	// Get the product ID from the URL
+	if err != nil {
+		helper_handler.SendErrorResponse(c, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Parse the product ID from the URL
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil || id == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		helper_handler.SendErrorResponse(c, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
-	// Call use case to update the product's name
+	// Call use case to update the product name
 	product, err := h.productUsecase.UpdateProductName(uint(id), req.Name)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-			"id":    id,
-		}).Error("Error updating product name")
-
-		// Return 404 if product is not found
+		log.Errorf("Failed to update product name: %d, error: %v", id, err)
 		if err.Error() == "product not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			helper_handler.SendErrorResponse(c, http.StatusNotFound, "Product not found")
 		} else {
-			// Handle other internal server errors
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, "Failed to update product")
 		}
 		return
 	}
 
-	// Transform the updated product entity to a response DTO
+	// Transform the entity to response DTO and respond
 	productResponse := transformer.TransformProductEntityToResponse(product)
-
-	// Respond with the updated product
+	log.Infof("Product updated successfully: ID: %d", product.ID())
 	c.JSON(http.StatusOK, productResponse)
 }

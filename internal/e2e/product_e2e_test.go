@@ -137,7 +137,7 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusInternalServerError))
 			var response map[string]interface{}
 			json.NewDecoder(w.Body).Decode(&response)
-			Expect(response["error"]).To(Equal("Failed to create product"))
+			Expect(response["errors"]).To(Equal("Failed to create product"))
 		})
 
 		It("should create a product successfully", func() {
@@ -281,7 +281,7 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			json.NewDecoder(w.Body).Decode(&response)
 
 			// Check the error message
-			Expect(response["error"]).To(Equal("Failed to create product"))
+			Expect(response["errors"]).To(Equal("Failed to create product"))
 		})
 	})
 
@@ -418,7 +418,7 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 				var response map[string]interface{}
 				json.NewDecoder(w.Body).Decode(&response)
-				Expect(response["error"]).To(Equal("Invalid product ID"))
+				Expect(response["errors"]).To(Equal("Invalid product ID"))
 			}
 		})
 
@@ -464,7 +464,7 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			var response map[string]interface{}
 			json.NewDecoder(w.Body).Decode(&response)
-			Expect(response["error"]).To(Equal("Product not found")) // Match error message
+			Expect(response["errors"]).To(Equal("Product not found")) // Match error message
 		})
 
 		It("should return 500 if the database returns an error", func() {
@@ -486,7 +486,7 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			var response map[string]interface{}
 			json.NewDecoder(w.Body).Decode(&response)
-			Expect(response["error"]).To(Equal("Database error"))
+			Expect(response["errors"]).To(Equal("Failed to retrieve product"))
 		})
 
 	})

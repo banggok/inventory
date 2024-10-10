@@ -1,8 +1,6 @@
 package dto
 
 import (
-	"encoding/json"
-
 	"github.com/go-playground/validator/v10"
 )
 
@@ -12,11 +10,7 @@ type CreateProductRequest struct {
 }
 
 // Validate performs JSON decoding and validation on CreateProductRequest and returns custom error messages if validation fails.
-func (r *CreateProductRequest) Validate(body []byte) map[string]string {
-	// Decode JSON directly into the struct
-	if err := json.Unmarshal(body, r); err != nil {
-		return map[string]string{"error": "Invalid JSON format"}
-	}
+func (r *CreateProductRequest) Validate() map[string]string {
 
 	// Create a new validator instance
 	validate := validator.New()
