@@ -33,24 +33,28 @@ func (u *productUsecase) CreateProduct(name string) (*entity.Product, error) {
 }
 
 func (u *productUsecase) GetProductByID(id uint) (*entity.Product, error) {
-	return u.productRepo.FindByID(id)
+	product, err := u.productRepo.FindByID(id)
+	if err != nil {
+		if err == repository.ErrProductNotFound {
+			return nil, ErrProductNotFound
+		}
+		return nil, err
+	}
+	return product, nil
 }
 
 // UpdateProductName updates the name of an existing product
 func (u *productUsecase) UpdateProductName(id uint, name string) (*entity.Product, error) {
-	// Find the existing product by ID
 	product, err := u.productRepo.FindByID(id)
 	if err != nil {
+		if err == repository.ErrProductNotFound {
+			return nil, ErrProductNotFound
+		}
 		return nil, err
 	}
 
 	// Update the product name
-	err = product.SetName(name)
-	if err != nil {
-		return nil, err
-	}
-
-	// Save the updated product
+	product.SetName(name)
 	if err := u.productRepo.Save(product); err != nil {
 		return nil, err
 	}

@@ -445,9 +445,9 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 		})
 
 		It("should return 404 for non-existent product", func() {
-			// Mock the repository to return a "product not found" error
+			// Mock the repository to return the "product not found" error
 			mockRepo := new(MockProductRepository)
-			mockRepo.On("FindByID", uint(99999)).Return(nil, errors.New("product not found"))
+			mockRepo.On("FindByID", uint(99999)).Return(nil, usecase.ErrProductNotFound) // Use the correct predefined error
 			productUsecase := usecase.NewProductUsecase(mockRepo)
 			productHandler := handler.NewProductHandler(productUsecase)
 

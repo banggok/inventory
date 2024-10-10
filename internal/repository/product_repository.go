@@ -8,6 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrProductNotFound is returned when a product is not found in the database
+var ErrProductNotFound = errors.New("product not found")
+
 type PostgresProductRepository interface {
 	Save(p *entity.Product) error
 	FindByID(id uint) (*entity.Product, error)
@@ -45,7 +48,7 @@ func (r *postgresProductRepository) FindByID(id uint) (*entity.Product, error) {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// Return a "product not found" error if the product doesn't exist
-			return nil, errors.New("product not found")
+			return nil, ErrProductNotFound
 		}
 		// Return other errors as general database errors
 		return nil, err
