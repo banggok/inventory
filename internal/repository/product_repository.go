@@ -22,19 +22,21 @@ func NewPostgresProductRepository(db *gorm.DB) PostgresProductRepository {
 	return &postgresProductRepository{DB: db}
 }
 
-// Save converts entity to model, inserts a new product into the database,
-// and updates the entity using MakeProduct with the generated ID
+// Save converts entity to model, saves it to the database, and updates the entity with the generated values
 func (r *postgresProductRepository) Save(p *entity.Product) error {
-	// Convert the entity product to the model product
+	// Convert entity.Product to model.Product for database operations
 	modelProduct := entityToModel(p)
 
-	// Save the model product to the database
-	if err := r.DB.Create(modelProduct).Error; err != nil {
+	// Use GORM's Save method to save the product to the database
+	// This will insert or update the record, and auto-populate fields like ID if it's a new record
+	if err := r.DB.Save(modelProduct).Error; err != nil {
 		return err
 	}
 
-	// After successful save, use MakeProduct to update the entity with the generated ID, name, and SKU
-	return p.MakeProduct(modelProduct.ID, modelProduct.Name, modelProduct.SKU)
+	// Update the passed entity.Product with the saved model's ID and other fields
+	p.MakeProduct(modelProduct.ID, modelProduct.Name, modelProduct.SKU)
+
+	return nil
 }
 
 // FindByID fetches a product from the database, converts model to entity, and returns it

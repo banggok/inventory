@@ -16,6 +16,8 @@ func SetupRouter(productHandler *handler.ProductHandler) *gin.Engine {
 	{
 		api.POST("/products", productHandler.CreateProduct)
 		api.GET("/products/:id", productHandler.GetProduct)
+		api.PUT("/products/:id", productHandler.UpdateProductName) // Add the route for updating the product name
+
 	}
 
 	return router

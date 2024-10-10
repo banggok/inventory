@@ -19,12 +19,14 @@ An inventory management system for managing products, allowing users to create, 
 - [API Endpoints](#api-endpoints)
   - [Create Product](#create-product)
   - [Get Product by ID](#get-product-by-id)
+  - [Update Product Name](#update-product-name)
 - [Project Structure](#project-structure)
 - [Contribution Guidelines](#contribution-guidelines)
 
 ## Features
 - Create new products
 - Retrieve products by ID
+- Update product name
 - End-to-End tests for product management
 - Graceful shutdown handling with SIGTERM/SIGINT
 - Mock-based testing for use cases
@@ -145,6 +147,28 @@ You can open `coverage.html` in a browser to see detailed test coverage results.
   - **400 Bad Request** if the product ID is invalid.
   - **404 Not Found** if the product does not exist.
 
+### Update Product Name
+
+- **Endpoint**: `PUT /api/v1/products/:id`
+- **Description**: Updates the name of an existing product by ID.
+- **Request Body**:
+  ```json
+  {
+    "name": "Updated Product Name"
+  }
+  ```
+- **Response**:
+  - **200 OK**:
+    ```json
+    {
+      "id": 1,
+      "name": "Updated Product Name",
+      "sku": "SKU-PRO-12345"
+    }
+    ```
+  - **422 Unprocessable Entity** if the request body is invalid (e.g., name is empty or too short/long).
+  - **404 Not Found** if the product does not exist.
+
 ## Project Structure
 
 - **cmd/api/**: The main entry point for the application.
@@ -160,4 +184,3 @@ If you'd like to contribute, feel free to fork the repository and submit a pull 
 - Write tests for new features and bug fixes.
 - Follow Go conventions and run `go fmt` to format your code.
 - Include detailed commit messages.
-

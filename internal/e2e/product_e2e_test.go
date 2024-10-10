@@ -1,4 +1,3 @@
-// /e2e/product_e2e_test.go
 package e2e_test
 
 import (
@@ -44,6 +43,15 @@ func (m *MockProductUsecase) CreateProduct(name string) (*entity.Product, error)
 // GetProductByID mock method
 func (m *MockProductUsecase) GetProductByID(id uint) (*entity.Product, error) {
 	args := m.Called(id)
+	if args.Get(0) != nil {
+		return args.Get(0).(*entity.Product), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+// UpdateProductName mock method
+func (m *MockProductUsecase) UpdateProductName(id uint, name string) (*entity.Product, error) {
+	args := m.Called(id, name)
 	if args.Get(0) != nil {
 		return args.Get(0).(*entity.Product), args.Error(1)
 	}
@@ -179,8 +187,72 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			// Print the actual error message for debugging
 			fmt.Printf("Actual error message: %v\n", response["error"])
 
-			// Adjust the expected error message based on actual output
-			Expect(response["error"]).To(ContainSubstring("Field validation for 'Name' failed"))
+			// Check for the expected custom error message for the "name" field
+			Expect(response["errors"]).To(HaveKey("Name"))
+			Expect(response["errors"].(map[string]interface{})["Name"]).To(Equal("Product name is required."))
+		})
+
+		It("should fail with a name that is too short and return 422 Unprocessable Entity", func() {
+			// Set up the request payload with a short name (less than 2 characters)
+			reqBody := map[string]string{"name": "A"} // Name shorter than the minimum length
+			body, _ := json.Marshal(reqBody)
+
+			// Create a Gin context to simulate the request
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/api/v1/products", bytes.NewBuffer(body))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			// Call the handler
+			productHandler.CreateProduct(c)
+
+			// Verify the response code (422 Unprocessable Entity)
+			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
+
+			// Verify the error message in the response
+			var response map[string]interface{}
+			json.NewDecoder(w.Body).Decode(&response)
+
+			// Print the actual error message for debugging
+			fmt.Printf("Actual error message: %v\n", response["errors"])
+
+			// Check for the expected custom error message for the "name" field
+			Expect(response["errors"]).To(HaveKey("Name"))
+			Expect(response["errors"].(map[string]interface{})["Name"]).To(Equal("Product name must be at least 2 characters long."))
+		})
+
+		It("should fail with a name that is too long and return 422 Unprocessable Entity", func() {
+			// Set up the request payload with a name longer than 255 characters
+			longName := make([]byte, 256) // Generate a string longer than 255 characters
+			for i := range longName {
+				longName[i] = 'A'
+			}
+
+			reqBody := map[string]string{"name": string(longName)}
+			body, _ := json.Marshal(reqBody)
+
+			// Create a Gin context to simulate the request
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/api/v1/products", bytes.NewBuffer(body))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			// Call the handler
+			productHandler.CreateProduct(c)
+
+			// Verify the response code (422 Unprocessable Entity)
+			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
+
+			// Verify the error message in the response
+			var response map[string]interface{}
+			json.NewDecoder(w.Body).Decode(&response)
+
+			// Print the actual error message for debugging
+			fmt.Printf("Actual error message: %v\n", response["errors"])
+
+			// Check for the expected custom error message for the "name" field
+			Expect(response["errors"]).To(HaveKey("Name"))
+			Expect(response["errors"].(map[string]interface{})["Name"]).To(Equal("Product name must be less than 255 characters long."))
 		})
 
 		It("should return 500 when the product cannot be saved to the database", func() {
@@ -210,6 +282,70 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			// Check the error message
 			Expect(response["error"]).To(Equal("Failed to create product"))
+		})
+	})
+
+	Context("PUT /products/:id (direct handler call)", func() {
+		It("should rename the product successfully", func() {
+			// Rename the product using the ID obtained from the create test
+			reqBody := map[string]string{"name": "Updated Product Name"}
+			body, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+
+			// Set the route parameter manually
+			c.Params = gin.Params{{Key: "id", Value: strconv.Itoa(int(productID))}}
+
+			c.Request = httptest.NewRequest("PUT", "/api/v1/products/"+strconv.Itoa(int(productID)), bytes.NewBuffer(body))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			productHandler.UpdateProductName(c)
+
+			// Verify the product was renamed
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			var response map[string]interface{}
+			json.NewDecoder(w.Body).Decode(&response)
+			Expect(response["name"]).To(Equal("Updated Product Name"))
+		})
+
+		It("should return 404 when renaming a non-existent product", func() {
+			reqBody := map[string]string{"name": "New Name"}
+			body, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+
+			// Set the route parameter manually
+			c.Params = gin.Params{{Key: "id", Value: strconv.Itoa(int(99999))}}
+
+			c.Request = httptest.NewRequest("PUT", "/api/v1/products/99999", bytes.NewBuffer(body)) // Non-existent ID
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			productHandler.UpdateProductName(c)
+
+			Expect(w.Code).To(Equal(http.StatusNotFound))
+		})
+
+		It("should return 422 when the new name is empty", func() {
+			// Try renaming the product with an empty name
+			reqBody := map[string]string{"name": ""}
+			body, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("PUT", "/api/v1/products/"+strconv.Itoa(int(productID)), bytes.NewBuffer(body))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			productHandler.UpdateProductName(c)
+
+			// Verify it returns a 422 Unprocessable Entity
+			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
+
+			var response map[string]interface{}
+			json.NewDecoder(w.Body).Decode(&response)
+			Expect(response["error"]).To(ContainSubstring("Field validation for 'Name' failed"))
 		})
 	})
 
