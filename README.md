@@ -1,36 +1,3 @@
-
-# Inventory Management System
-
-An inventory management system for managing products, allowing users to create, retrieve, update, and delete product data. This system is built using Golang, Gin framework, GORM ORM, PostgreSQL, and includes E2E testing with Ginkgo.
-
-## Table of Contents
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Prerequisites](#prerequisites)
-- [Setup Instructions](#setup-instructions)
-  - [Clone the Repository](#clone-the-repository)
-  - [Set Up Environment Variables](#set-up-environment-variables)
-  - [Run Migrations](#run-migrations)
-- [Running the Application](#running-the-application)
-  - [Running in Development](#running-in-development)
-- [Running Tests](#running-tests)
-  - [End-to-End Tests](#end-to-end-tests)
-  - [Running with Coverage](#running-with-coverage)
-- [API Endpoints](#api-endpoints)
-  - [Create Product](#create-product)
-  - [Get Product by ID](#get-product-by-id)
-  - [Update Product Name](#update-product-name)
-- [Project Structure](#project-structure)
-- [Contribution Guidelines](#contribution-guidelines)
-
-## Features
-- Create new products
-- Retrieve products by ID
-- Update product name
-- End-to-End tests for product management
-- Graceful shutdown handling with SIGTERM/SIGINT
-- Mock-based testing for use cases
-
 ## Technologies Used
 - **Golang** (1.23)
 - **Gin** (Web framework)
@@ -54,19 +21,6 @@ git clone https://github.com/yourusername/inventory_management.git
 cd inventory_management
 ```
 
-### Set Up Environment Variables
-Create a `.env` file in the root directory and add the following environment variables to configure your PostgreSQL database connection:
-
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=yourusername
-DB_PASSWORD=yourpassword
-DB_NAME=inventory_db
-```
-
-Make sure PostgreSQL is running on your system and a database named `inventory_db` exists.
-
 ### Run Migrations
 To set up the database schema, run the SQL migration file:
 
@@ -82,7 +36,7 @@ This will create the necessary table in your PostgreSQL database.
 To run the application in development mode, execute the following command:
 
 ```bash
-go run ./cmd/api/
+make run
 ```
 
 The server will start on `http://localhost:8080`.
@@ -93,7 +47,7 @@ The server will start on `http://localhost:8080`.
 This project uses Ginkgo for end-to-end testing. To run the tests:
 
 ```bash
-ginkgo -r -v
+make test
 ```
 
 This will run all tests across your project, providing verbose output.
@@ -102,81 +56,40 @@ This will run all tests across your project, providing verbose output.
 To run tests with coverage and generate a coverage report, use:
 
 ```bash
-ginkgo -r -cover -coverpkg=./internal/... -coverprofile=coverage.out
-go tool cover -html=coverage.out -o coverage.html
+make coverage
 ```
 
 You can open `coverage.html` in a browser to see detailed test coverage results.
 
-## API Endpoints
+### Running Sonar Scanner
+To run tests with coverage and generate a coverage report, use:
 
-### Create Product
-
-- **Endpoint**: `POST /api/v1/products`
-- **Description**: Creates a new product.
-- **Request Body**:
-  ```json
-  {
-    "name": "Product Name"
-  }
-  ```
-- **Response**:
-  - **201 Created**:
-    ```json
-    {
-      "id": 1,
-      "name": "Product Name",
-      "sku": "SKU-PRO-12345"
-    }
-    ```
-  - **422 Unprocessable Entity** if the request body is invalid.
-
-### Get Product by ID
-
-- **Endpoint**: `GET /api/v1/products/:id`
-- **Description**: Retrieves a product by its ID.
-- **Response**:
-  - **200 OK**:
-    ```json
-    {
-      "id": 1,
-      "name": "Product Name",
-      "sku": "SKU-PRO-12345"
-    }
-    ```
-  - **400 Bad Request** if the product ID is invalid.
-  - **404 Not Found** if the product does not exist.
-
-### Update Product Name
-
-- **Endpoint**: `PUT /api/v1/products/:id`
-- **Description**: Updates the name of an existing product by ID.
-- **Request Body**:
-  ```json
-  {
-    "name": "Updated Product Name"
-  }
-  ```
-- **Response**:
-  - **200 OK**:
-    ```json
-    {
-      "id": 1,
-      "name": "Updated Product Name",
-      "sku": "SKU-PRO-12345"
-    }
-    ```
-  - **422 Unprocessable Entity** if the request body is invalid (e.g., name is empty or too short/long).
-  - **404 Not Found** if the product does not exist.
+```bash
+make sonar
+```
 
 ## Project Structure
 
-- **cmd/api/**: The main entry point for the application.
-- **api/**: Contains API handlers and DTOs.
-- **internal/**: Core business logic, use cases, and repositories.
-- **pkg/db/**: Database connection setup.
-- **migrations/**: SQL files for database schema creation.
-- **e2e/**: End-to-end tests.
+```bash
+├── api                 # Contains API handlers and DTOs (Data Transfer Objects).
+│   ├── handler         # API handlers (controllers) and DTOs
+│   ├── transformer     # Transforms entities to DTOs for responses
+│   └── helper          # Utility functions for API handling
+├── cmd                 # Responsible for bootstrapping and configuring the application.
+│   └── api             # Main entry point of the application
+├── internal            # Core business logic, use cases, and repositories.
+│   ├── entity          # Data logic entities
+│   ├── model           # Database models
+│   ├── repository      # Data access layer (repositories)
+│   └── usecase         # Application use cases (business logic)
+├── migrations          # SQL migration files
+├── pkg                 # Contains database utilities and configuration.
+│   └── db              # Database connection setup
+│   └── utility         # Utility Helper
+└── tests               # Contain tests
+    └── e2e             # End-to-end tests
+```
+
 
 ## Contribution Guidelines
 

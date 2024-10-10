@@ -5,3 +5,5 @@
 coverage.html
 coverage.out
 ginkgo-failures.json
+.scannerwork/.sonar_lock
+.scannerwork/report-task.txt

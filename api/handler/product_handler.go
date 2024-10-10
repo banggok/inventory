@@ -5,8 +5,8 @@ import (
 	"inventory_management/api/handler/dto"
 	helper_handler "inventory_management/api/handler/helper"
 	"inventory_management/api/handler/transformer"
-	helper "inventory_management/helper"
 	"inventory_management/internal/usecase"
+	"inventory_management/pkg/utility"
 	"net/http"
 	"strconv"
 
@@ -34,13 +34,13 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 
 	product, err := h.productUsecase.CreateProduct(req.Name)
 	if err != nil {
-		helper.LogError(consts.ErrFailedCreate, req.Name, err)
+		utility.LogError(consts.ErrFailedCreate, req.Name, err)
 		helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedCreate)
 		return
 	}
 
 	productResponse := transformer.TransformProductEntityToResponse(product)
-	helper.LogSuccess("Product created successfully", product.ID(), product.Name())
+	utility.LogSuccess("Product created successfully", product.ID(), product.Name())
 	c.JSON(http.StatusCreated, productResponse)
 }
 
@@ -49,7 +49,7 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil || id == 0 {
-		helper.LogError(consts.ErrInvalidProductID, idParam, err)
+		utility.LogError(consts.ErrInvalidProductID, idParam, err)
 		helper_handler.SendErrorResponse(c, http.StatusBadRequest, consts.ErrInvalidProductID)
 		return
 	}
@@ -59,14 +59,14 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 		if err == usecase.ErrProductNotFound { // Use a defined error from the usecase layer
 			helper_handler.SendErrorResponse(c, http.StatusNotFound, consts.ErrProductNotFound)
 		} else {
-			helper.LogError(consts.ErrFailedRetrieve, strconv.Itoa(int(id)), err)
+			utility.LogError(consts.ErrFailedRetrieve, strconv.Itoa(int(id)), err)
 			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedRetrieve)
 		}
 		return
 	}
 
 	productResponse := transformer.TransformProductEntityToResponse(product)
-	helper.LogSuccess("Product retrieved", product.ID(), product.Name())
+	utility.LogSuccess("Product retrieved", product.ID(), product.Name())
 	c.JSON(http.StatusOK, productResponse)
 }
 
@@ -93,13 +93,13 @@ func (h *ProductHandler) UpdateProductName(c *gin.Context) {
 		if err == usecase.ErrProductNotFound { // Use a defined error from the usecase layer
 			helper_handler.SendErrorResponse(c, http.StatusNotFound, consts.ErrProductNotFound)
 		} else {
-			helper.LogError(consts.ErrFailedUpdate, strconv.Itoa(int(id)), err)
+			utility.LogError(consts.ErrFailedUpdate, strconv.Itoa(int(id)), err)
 			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedUpdate)
 		}
 		return
 	}
 
 	productResponse := transformer.TransformProductEntityToResponse(product)
-	helper.LogSuccess("Product updated successfully", product.ID(), product.Name())
+	utility.LogSuccess("Product updated successfully", product.ID(), product.Name())
 	c.JSON(http.StatusOK, productResponse)
 }

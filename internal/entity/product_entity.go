@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// Define constant for error message
+const ErrEmptyName = "name cannot be empty"
+
 // Product represents the business logic of a product
 type Product struct {
 	id        uint      // Unexported ID field
@@ -20,7 +23,7 @@ type Product struct {
 // NewProduct creates a new Product instance and initializes the Name, SKU, and timestamps
 func NewProduct(name string) (*Product, error) {
 	if name == "" {
-		return nil, errors.New("name cannot be empty") // Directly check for empty name
+		return nil, errors.New(ErrEmptyName) // Use constant for empty name check
 	}
 
 	currentTime := time.Now()
@@ -39,7 +42,7 @@ func NewProduct(name string) (*Product, error) {
 // MakeProduct sets all attributes of the Product from parameters
 func (p *Product) MakeProduct(id uint, name string, sku string, createdAt, updatedAt time.Time) error {
 	if name == "" {
-		return errors.New("name cannot be empty") // Check for empty name
+		return errors.New(ErrEmptyName) // Use constant for empty name check
 	}
 	p.id = id               // Set the unexported ID
 	p.name = name           // Set the unexported Name
@@ -95,7 +98,7 @@ func (p *Product) UpdatedAt() time.Time {
 // SetName sets the Name of the product
 func (p *Product) SetName(name string) error {
 	if name == "" {
-		return errors.New("name cannot be empty") // Directly check for empty name
+		return errors.New(ErrEmptyName) // Use constant for empty name check
 	}
 	p.name = name // Set the unexported Name
 	return nil

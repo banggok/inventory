@@ -1,4 +1,4 @@
-package helper
+package utility
 
 import log "github.com/sirupsen/logrus"
 

@@ -1,36 +1,40 @@
-# Define variables for database settings, Go flags, and test coverage
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=yourusername
-DB_PASSWORD=yourpassword
-DB_NAME=inventory_db
-MIGRATION_PATH=migrations
+# Load environment variables from .env
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
+
 GOCMD=go
 GINKGO=ginkgo
 COVERAGE_OUT=coverage.out
 
-# Default target: Run the service
+# Check if Docker containers are already running
+.PHONY: check-containers
+check-containers:
+	@docker-compose ps | grep "Up" > /dev/null || docker-compose up -d
+
+# Default target: Run the service with Docker Compose
 .PHONY: run
-run:
+run: check-containers
 	@echo "Running the Inventory Management service..."
 	$(GOCMD) run ./cmd/api
 
 # Migration commands: Run migrations using soda (change soda to your migration tool if different)
 .PHONY: migrate
-migrate:
+migrate: check-containers
 	@echo "Running migrations..."
 	soda migrate
 
 .PHONY: rollback
-rollback:
+rollback: check-containers
 	@echo "Rolling back migrations..."
 	soda rollback
 
-# Run the E2E tests with coverage
+# Run the E2E tests with Docker Compose and coverage for all folders
 .PHONY: test
-test:
+test: check-containers
 	@echo "Running E2E tests with coverage..."
-	$(GINKGO) -r -cover -coverpkg=./internal/... -coverprofile=$(COVERAGE_OUT)
+	$(GINKGO) -r -cover -coverpkg=./... -coverprofile=$(COVERAGE_OUT)
 
 # Open the coverage report in HTML format
 .PHONY: coverage
@@ -40,12 +44,24 @@ coverage:
 	@echo "Opening coverage report..."
 	open coverage.html # On Linux, you might need to use xdg-open
 
+# Run SonarScanner after the tests and coverage generation
+.PHONY: sonar
+sonar: test
+	@echo "Loading environment variables and running SonarScanner for code analysis..."
+	sonar-scanner -Dsonar.host.url=$(SONAR_HOST_URL) -Dsonar.token=$(SONAR_TOKEN)
+
 # Clean up: Remove the coverage report file
 .PHONY: clean
 clean:
 	@echo "Cleaning up coverage files..."
 	rm -f $(COVERAGE_OUT) coverage.html
 
-# Run all: Run migrations, then run the service and tests
+# Run all: Start Docker containers, run migrations, the service, tests, coverage, and sonar analysis
 .PHONY: all
-all: migrate run test coverage
+all: migrate run test coverage sonar
+
+# Stop Docker Compose services
+.PHONY: stop
+stop:
+	@echo "Stopping Docker containers..."
+	docker-compose down
