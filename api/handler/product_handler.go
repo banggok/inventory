@@ -107,17 +107,23 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 
 // UpdateProductName handles updating a product's name
 func (h *ProductHandler) UpdateProductName(c *gin.Context) {
+	// Read the request body
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
 	var req dto.UpdateProductRequest
 
-	// Bind the request body to the req struct
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+	// Validate the request with custom error messages using the Validate() method
+	if validationErrors := req.Validate(body); validationErrors != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": validationErrors})
 		return
 	}
 
 	// Get the product ID from the URL
 	idParam := c.Param("id")
-
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil || id == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
@@ -126,7 +132,6 @@ func (h *ProductHandler) UpdateProductName(c *gin.Context) {
 
 	// Call use case to update the product's name
 	product, err := h.productUsecase.UpdateProductName(uint(id), req.Name)
-
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

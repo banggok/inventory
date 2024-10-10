@@ -1,4 +1,3 @@
-// /internal/repository/product_repository.go
 package repository
 
 import (
@@ -33,8 +32,8 @@ func (r *postgresProductRepository) Save(p *entity.Product) error {
 		return err
 	}
 
-	// Update the passed entity.Product with the saved model's ID and other fields
-	p.MakeProduct(modelProduct.ID, modelProduct.Name, modelProduct.SKU)
+	// Update the passed entity.Product with the saved model's ID and other fields including timestamps
+	p.MakeProduct(modelProduct.ID, modelProduct.Name, modelProduct.SKU, modelProduct.CreatedAt, modelProduct.UpdatedAt)
 
 	return nil
 }
@@ -57,15 +56,23 @@ func (r *postgresProductRepository) FindByID(id uint) (*entity.Product, error) {
 // Convert entity.Product to model.Product for saving to the database
 func entityToModel(entityProduct *entity.Product) *model.Product {
 	return &model.Product{
-		ID:   entityProduct.ID(),
-		Name: entityProduct.Name(),
-		SKU:  entityProduct.SKU(),
+		ID:        entityProduct.ID(),
+		Name:      entityProduct.Name(),
+		SKU:       entityProduct.SKU(),
+		CreatedAt: entityProduct.CreatedAt(),
+		UpdatedAt: entityProduct.UpdatedAt(),
 	}
 }
 
 // Convert model.Product to entity.Product for returning from the database
 func modelToEntity(modelProduct *model.Product) *entity.Product {
 	entityProduct := &entity.Product{}
-	entityProduct.MakeProduct(modelProduct.ID, modelProduct.Name, modelProduct.SKU)
+	entityProduct.MakeProduct(
+		modelProduct.ID,
+		modelProduct.Name,
+		modelProduct.SKU,
+		modelProduct.CreatedAt,
+		modelProduct.UpdatedAt,
+	)
 	return entityProduct
 }

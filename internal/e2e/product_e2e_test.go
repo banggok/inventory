@@ -345,8 +345,63 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			var response map[string]interface{}
 			json.NewDecoder(w.Body).Decode(&response)
-			Expect(response["error"]).To(ContainSubstring("Field validation for 'Name' failed"))
+
+			// Check for the expected custom error message for the "name" field
+			Expect(response["errors"]).To(HaveKey("Name"))
+			Expect(response["errors"].(map[string]interface{})["Name"]).To(Equal("Product name is required."))
 		})
+
+		It("should return 422 when the new name is too short", func() {
+			// Try renaming the product with a name that's too short
+			reqBody := map[string]string{"name": "A"} // Name shorter than the minimum length
+			body, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("PUT", "/api/v1/products/"+strconv.Itoa(int(productID)), bytes.NewBuffer(body))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			productHandler.UpdateProductName(c)
+
+			// Verify it returns a 422 Unprocessable Entity
+			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
+
+			var response map[string]interface{}
+			json.NewDecoder(w.Body).Decode(&response)
+
+			// Check for the expected custom error message for the "name" field
+			Expect(response["errors"]).To(HaveKey("Name"))
+			Expect(response["errors"].(map[string]interface{})["Name"]).To(Equal("Product name must be at least 2 characters long."))
+		})
+
+		It("should return 422 when the new name exceeds the maximum length", func() {
+			// Try renaming the product with a name that's too long
+			longName := make([]byte, 256) // Generate a string longer than 255 characters
+			for i := range longName {
+				longName[i] = 'A'
+			}
+
+			reqBody := map[string]string{"name": string(longName)}
+			body, _ := json.Marshal(reqBody)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("PUT", "/api/v1/products/"+strconv.Itoa(int(productID)), bytes.NewBuffer(body))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			productHandler.UpdateProductName(c)
+
+			// Verify it returns a 422 Unprocessable Entity
+			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
+
+			var response map[string]interface{}
+			json.NewDecoder(w.Body).Decode(&response)
+
+			// Check for the expected custom error message for the "name" field
+			Expect(response["errors"]).To(HaveKey("Name"))
+			Expect(response["errors"].(map[string]interface{})["Name"]).To(Equal("Product name must be less than 255 characters long."))
+		})
+
 	})
 
 	Context("GET /products/:id (direct handler call)", func() {

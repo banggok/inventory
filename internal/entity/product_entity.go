@@ -1,4 +1,3 @@
-// /internal/entity/product_entity.go
 package entity
 
 import (
@@ -11,34 +10,42 @@ import (
 
 // Product represents the business logic of a product
 type Product struct {
-	id   uint   // Unexported ID field
-	name string // Unexported Name field
-	sku  string // Unexported SKU field
+	id        uint      // Unexported ID field
+	name      string    // Unexported Name field
+	sku       string    // Unexported SKU field
+	createdAt time.Time // Unexported CreatedAt field
+	updatedAt time.Time // Unexported UpdatedAt field
 }
 
-// NewProduct creates a new Product instance and initializes the Name and SKU
+// NewProduct creates a new Product instance and initializes the Name, SKU, and timestamps
 func NewProduct(name string) (*Product, error) {
 	if name == "" {
 		return nil, errors.New("name cannot be empty") // Directly check for empty name
 	}
 
+	currentTime := time.Now()
+
 	product := &Product{
-		id:   0, // Assign default ID (can change as needed)
-		name: name,
-		sku:  generateSKU(name), // Generate SKU when creating the product
+		id:        0, // Assign default ID (can change as needed)
+		name:      name,
+		sku:       generateSKU(name), // Generate SKU when creating the product
+		createdAt: currentTime,
+		updatedAt: currentTime,
 	}
 
 	return product, nil
 }
 
 // MakeProduct sets all attributes of the Product from parameters
-func (p *Product) MakeProduct(id uint, name string, sku string) error {
+func (p *Product) MakeProduct(id uint, name string, sku string, createdAt, updatedAt time.Time) error {
 	if name == "" {
 		return errors.New("name cannot be empty") // Check for empty name
 	}
-	p.id = id     // Set the unexported ID
-	p.name = name // Set the unexported Name
-	p.sku = sku   // Set the SKU from the parameter
+	p.id = id               // Set the unexported ID
+	p.name = name           // Set the unexported Name
+	p.sku = sku             // Set the SKU from the parameter
+	p.createdAt = createdAt // Set the CreatedAt field
+	p.updatedAt = updatedAt // Set the UpdatedAt field
 	return nil
 }
 
@@ -73,6 +80,16 @@ func (p *Product) Name() string {
 // SKU returns the SKU of the product
 func (p *Product) SKU() string {
 	return p.sku // Getter for SKU
+}
+
+// CreatedAt returns the creation timestamp of the product
+func (p *Product) CreatedAt() time.Time {
+	return p.createdAt
+}
+
+// UpdatedAt returns the last updated timestamp of the product
+func (p *Product) UpdatedAt() time.Time {
+	return p.updatedAt
 }
 
 // SetName sets the Name of the product

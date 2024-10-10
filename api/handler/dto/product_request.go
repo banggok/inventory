@@ -22,26 +22,26 @@ func (r *CreateProductRequest) Validate(body []byte) map[string]string {
 	validate := validator.New()
 	err := validate.Struct(r)
 	if err != nil {
-		return parseValidationErrors(err.(validator.ValidationErrors))
+		return r.parseValidationErrors(err.(validator.ValidationErrors))
 	}
 
 	return nil
 }
 
 // parseValidationErrors converts the validation errors into a map of custom error messages.
-func parseValidationErrors(validationErrors validator.ValidationErrors) map[string]string {
+func (r *CreateProductRequest) parseValidationErrors(validationErrors validator.ValidationErrors) map[string]string {
 	errors := make(map[string]string)
 
 	for _, err := range validationErrors {
 		fieldWithTag := err.Field() + "." + err.Tag()
-		errors[err.Field()] = getCustomErrorMessage(fieldWithTag)
+		errors[err.Field()] = r.getCustomErrorMessage(fieldWithTag)
 	}
 
 	return errors
 }
 
 // getCustomErrorMessage returns custom error messages for validation rules.
-func getCustomErrorMessage(fieldWithTag string) string {
+func (r *CreateProductRequest) getCustomErrorMessage(fieldWithTag string) string {
 	customMessages := map[string]string{
 		"Name.required": "Product name is required.",
 		"Name.min":      "Product name must be at least 2 characters long.",
