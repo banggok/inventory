@@ -5,19 +5,23 @@
 - **PostgreSQL** (Database)
 - **Ginkgo** and **Gomega** (Testing frameworks)
 - **Testify** (Mocking framework)
+- **Sonarqube** (Code Quality Analysis)
+- **Soda CLI** (Database Migration)
 
 ## Prerequisites
 Before you start, ensure that you have the following installed:
 - **Golang** (1.23 or above)
 - **PostgreSQL** (version 12 or higher)
 - **Git**
+- **Sonarqube**
+- **Soda CLI**
 
 ## Setup Instructions
 
 ### Clone the Repository
 First, clone the repository to your local machine:
 ```bash
-git clone https://github.com/yourusername/inventory_management.git
+git clone https://github.com/banggok/inventory_management.git
 cd inventory_management
 ```
 
