@@ -54,7 +54,9 @@ func (u *productUsecase) UpdateProductName(id uint, name string) (*entity.Produc
 	}
 
 	// Update the product name
-	product.SetName(name)
+	if err := product.SetName(name); err != nil {
+		return nil, err
+	}
 	if err := u.productRepo.Save(product); err != nil {
 		return nil, err
 	}

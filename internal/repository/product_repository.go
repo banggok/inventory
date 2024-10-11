@@ -8,6 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// Define an interface for the methods we use from gorm.DB
+type DB interface {
+	Save(value interface{}) *gorm.DB
+	First(dest interface{}, conds ...interface{}) *gorm.DB
+}
+
 // ErrProductNotFound is returned when a product is not found in the database
 var ErrProductNotFound = errors.New("product not found")
 
@@ -17,26 +23,30 @@ type PostgresProductRepository interface {
 }
 
 type postgresProductRepository struct {
-	DB *gorm.DB
+	DB DB // Use the interface instead of the concrete gorm.DB type
 }
 
-func NewPostgresProductRepository(db *gorm.DB) PostgresProductRepository {
+func NewPostgresProductRepository(db DB) PostgresProductRepository {
 	return &postgresProductRepository{DB: db}
 }
 
 // Save converts entity to model, saves it to the database, and updates the entity with the generated values
 func (r *postgresProductRepository) Save(p *entity.Product) error {
-	// Convert entity.Product to model.Product for database operations
 	modelProduct := entityToModel(p)
 
-	// Use GORM's Save method to save the product to the database
-	// This will insert or update the record, and auto-populate fields like ID if it's a new record
 	if err := r.DB.Save(modelProduct).Error; err != nil {
 		return err
 	}
 
-	// Update the passed entity.Product with the saved model's ID and other fields including timestamps
-	p.MakeProduct(modelProduct.ID, modelProduct.Name, modelProduct.SKU, modelProduct.CreatedAt, modelProduct.UpdatedAt)
+	if err := p.MakeProduct(
+		modelProduct.ID,
+		modelProduct.Name,
+		modelProduct.SKU,
+		modelProduct.CreatedAt,
+		modelProduct.UpdatedAt,
+	); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -47,13 +57,11 @@ func (r *postgresProductRepository) FindByID(id uint) (*entity.Product, error) {
 	err := r.DB.First(&modelProduct, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// Return a "product not found" error if the product doesn't exist
 			return nil, ErrProductNotFound
 		}
-		// Return other errors as general database errors
 		return nil, err
 	}
-	return modelToEntity(&modelProduct), nil
+	return modelToEntity(&modelProduct)
 }
 
 // Convert entity.Product to model.Product for saving to the database
@@ -68,14 +76,17 @@ func entityToModel(entityProduct *entity.Product) *model.Product {
 }
 
 // Convert model.Product to entity.Product for returning from the database
-func modelToEntity(modelProduct *model.Product) *entity.Product {
+func modelToEntity(modelProduct *model.Product) (*entity.Product, error) {
 	entityProduct := &entity.Product{}
-	entityProduct.MakeProduct(
+
+	if err := entityProduct.MakeProduct(
 		modelProduct.ID,
 		modelProduct.Name,
 		modelProduct.SKU,
 		modelProduct.CreatedAt,
 		modelProduct.UpdatedAt,
-	)
-	return entityProduct
+	); err != nil {
+		return nil, err
+	}
+	return entityProduct, nil
 }

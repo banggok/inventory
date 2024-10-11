@@ -3,7 +3,7 @@ package helper_handler
 import (
 	"encoding/json"
 	"inventory_management/api/handler/dto"
-	"io/ioutil"
+	"io"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,8 +16,8 @@ func SendErrorResponse(c *gin.Context, statusCode int, message interface{}) {
 // ReadAndValidateRequestBody reads the request body, validates it, and returns validation errors if any.
 // It returns nil if validation succeeds.
 func ReadAndValidateRequestBody(c *gin.Context, request dto.Validator) (map[string]string, error) {
-	// Read the request body
-	rawBody, err := ioutil.ReadAll(c.Request.Body)
+	// Read the request body using io.ReadAll instead of ioutil.ReadAll
+	rawBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		return map[string]string{"error": "Invalid request body"}, err
 	}

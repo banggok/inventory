@@ -44,9 +44,15 @@ coverage:
 	@echo "Opening coverage report..."
 	open coverage.html # On Linux, you might need to use xdg-open
 
+# Performing code analysis...
+.PHONY: analysis
+analysis: test
+	@echo "Performing code analysis..."
+	golangci-lint run
+
 # Run SonarScanner after the tests and coverage generation
 .PHONY: sonar
-sonar: test
+sonar: analysis
 	@echo "Loading environment variables and running SonarScanner for code analysis..."
 	sonar-scanner -Dsonar.host.url=$(SONAR_HOST_URL) -Dsonar.token=$(SONAR_TOKEN)
 

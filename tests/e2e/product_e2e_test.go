@@ -102,12 +102,13 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 		// Call the CreateProduct handler
 		productHandler.CreateProduct(c)
 
-		// Print the response to check if the product is created correctly
-		fmt.Printf("Create Product Response: %v\n", w.Body.String())
-
 		// Extract the product ID from the response for future GET requests
 		var response map[string]interface{}
-		json.NewDecoder(w.Body).Decode(&response)
+		err := json.NewDecoder(w.Body).Decode(&response)
+		if err != nil {
+			fmt.Printf("Error decoding response: %v\n", err)
+			return
+		}
 		productID = uint(response["id"].(float64))
 
 		// Debugging to ensure productID is not zero
@@ -136,7 +137,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			Expect(w.Code).To(Equal(http.StatusInternalServerError))
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 			Expect(response["errors"]).To(Equal("Failed to create product"))
 		})
 
@@ -158,7 +163,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusCreated))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 			Expect(response["name"]).To(Equal("Another Test Product"))
 			Expect(response["id"]).ShouldNot(BeZero())
 		})
@@ -182,10 +191,14 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			// Verify the error message in the response
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Print the actual error message for debugging
-			fmt.Printf("Actual error message: %v\n", response["error"])
+			fmt.Printf("Actual error message: %v\n", response["errors"])
 
 			// Check for the expected custom error message for the "name" field
 			Expect(response["errors"]).To(HaveKey("Name"))
@@ -211,7 +224,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			// Verify the error message in the response
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Print the actual error message for debugging
 			fmt.Printf("Actual error message: %v\n", response["errors"])
@@ -245,7 +262,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 
 			// Verify the error message in the response
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Print the actual error message for debugging
 			fmt.Printf("Actual error message: %v\n", response["errors"])
@@ -278,7 +299,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusInternalServerError))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Check the error message
 			Expect(response["errors"]).To(Equal("Failed to create product"))
@@ -306,7 +331,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusOK))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 			Expect(response["name"]).To(Equal("Updated Product Name"))
 		})
 
@@ -344,7 +373,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Check for the expected custom error message for the "name" field
 			Expect(response["errors"]).To(HaveKey("Name"))
@@ -367,7 +400,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Check for the expected custom error message for the "name" field
 			Expect(response["errors"]).To(HaveKey("Name"))
@@ -395,7 +432,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusUnprocessableEntity))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Check for the expected custom error message for the "name" field
 			Expect(response["errors"]).To(HaveKey("Name"))
@@ -417,7 +458,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 				Expect(w.Code).To(Equal(http.StatusBadRequest))
 
 				var response map[string]interface{}
-				json.NewDecoder(w.Body).Decode(&response)
+				err := json.NewDecoder(w.Body).Decode(&response)
+				if err != nil {
+					fmt.Printf("Error decoding response: %v\n", err)
+					return
+				}
 				Expect(response["errors"]).To(Equal("Invalid product ID"))
 			}
 		})
@@ -435,7 +480,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusOK))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 
 			// Debugging to ensure the response is correct
 			fmt.Printf("Get Product Response: %v\n", w.Body.String())
@@ -463,7 +512,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusNotFound))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 			Expect(response["errors"]).To(Equal("Product not found")) // Match error message
 		})
 
@@ -485,7 +538,11 @@ var _ = Describe("Product Handler E2E Tests (Direct Handler Calls)", func() {
 			Expect(w.Code).To(Equal(http.StatusInternalServerError))
 
 			var response map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			if err != nil {
+				fmt.Printf("Error decoding response: %v\n", err)
+				return
+			}
 			Expect(response["errors"]).To(Equal("Failed to retrieve product"))
 		})
 
