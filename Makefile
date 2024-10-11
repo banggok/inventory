@@ -49,6 +49,12 @@ coverage:
 analysis: test
 	@echo "Performing code analysis..."
 	golangci-lint run
+	@echo "Running gosec security checks..."
+	gosec -severity medium -confidence medium ./... 
+	@if [ $$? -ne 0 ]; then \
+	  echo "gosec detected security issues! Failing the build."; \
+	  exit 1; \
+	fi
 
 # Run SonarScanner after the tests and coverage generation
 .PHONY: sonar

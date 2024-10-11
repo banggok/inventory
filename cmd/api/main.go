@@ -1,4 +1,3 @@
-// /cmd/api/main.go
 package main
 
 import (
@@ -9,6 +8,7 @@ import (
 	"inventory_management/pkg/db"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -23,6 +23,15 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file")
 	}
+
+	// Read ReadHeaderTimeout from the .env file and convert to time.Duration
+	readHeaderTimeoutStr := os.Getenv("READ_HEADER_TIMEOUT")
+	readHeaderTimeout, err := strconv.Atoi(readHeaderTimeoutStr)
+	if err != nil || readHeaderTimeout <= 0 {
+		log.Warn("Invalid or missing READ_HEADER_TIMEOUT, defaulting to 10 seconds")
+		readHeaderTimeout = 10 // default to 10 seconds if the env variable is invalid or missing
+	}
+
 	// Initialize DB connection
 	db, sqlDB := db.InitDB(false)
 	if db == nil || sqlDB == nil {
@@ -39,8 +48,9 @@ func main() {
 
 	// Create the HTTP server with the Gin router as its handler
 	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
+		Addr:              ":8080",
+		Handler:           router,
+		ReadHeaderTimeout: time.Duration(readHeaderTimeout) * time.Second, // Adding ReadHeaderTimeout to prevent Slowloris attack
 	}
 
 	// Start the server in a goroutine so that it doesn't block graceful shutdown handling

@@ -1,6 +1,7 @@
 package entity_test
 
 import (
+	"errors"
 	"inventory_management/internal/entity"
 	"testing"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestNewProduct tests the NewProduct function
 // TestNewProduct tests the NewProduct function
 func TestNewProduct(t *testing.T) {
 	// Test valid product creation
@@ -29,7 +29,7 @@ func TestNewProduct(t *testing.T) {
 	product, err = entity.NewProduct("")
 	assert.Error(t, err)
 	assert.Nil(t, product)
-	assert.EqualError(t, err, entity.ErrEmptyName)
+	assert.EqualError(t, err, entity.ErrEmptyName) // Use exported ErrEmptyName
 }
 
 // TestMakeProduct tests the MakeProduct method
@@ -50,7 +50,7 @@ func TestMakeProduct(t *testing.T) {
 	// Test error when name is empty in MakeProduct
 	err = product.MakeProduct(1, "", "SKU-UPC-12345", createdAt, updatedAt)
 	assert.Error(t, err)
-	assert.EqualError(t, err, entity.ErrEmptyName)
+	assert.EqualError(t, err, entity.ErrEmptyName) // Use exported ErrEmptyName
 }
 
 // TestGetters tests all the getters (ID, Name, SKU, CreatedAt, UpdatedAt)
@@ -80,5 +80,18 @@ func TestSetName(t *testing.T) {
 	// Test error when setting an empty name
 	err = product.SetName("")
 	assert.Error(t, err)
-	assert.EqualError(t, err, entity.ErrEmptyName)
+	assert.EqualError(t, err, entity.ErrEmptyName) // Use exported ErrEmptyName
+}
+
+// TestGenerateSKUError tests the error scenario when generating SKU fails
+func TestGenerateSKUError(t *testing.T) {
+	// Mock the random number generation to simulate an error
+	mockRandomNumberGenerator := func(b []byte) (int, error) {
+		return 0, errors.New("random generation error")
+	}
+
+	// Attempt to create a product with the mocked random function
+	_, err := entity.NewProductWithCustomGenerator("TestProduct", mockRandomNumberGenerator)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "random generation error")
 }

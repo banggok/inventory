@@ -7,6 +7,7 @@ import (
 	"inventory_management/api/handler/transformer"
 	"inventory_management/internal/usecase"
 	"inventory_management/pkg/utility"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -59,7 +60,12 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 		if err == usecase.ErrProductNotFound { // Use a defined error from the usecase layer
 			helper_handler.SendErrorResponse(c, http.StatusNotFound, consts.ErrProductNotFound)
 		} else {
-			utility.LogError(consts.ErrFailedRetrieve, strconv.Itoa(int(id)), err)
+			// Ensure the ID fits within int range before converting
+			if id <= uint64(math.MaxInt) {
+				utility.LogError(consts.ErrFailedRetrieve, strconv.Itoa(int(id)), err)
+			} else {
+				utility.LogError(consts.ErrFailedRetrieve, idParam, err) // Use original string if too large
+			}
 			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedRetrieve)
 		}
 		return
@@ -93,7 +99,12 @@ func (h *ProductHandler) UpdateProductName(c *gin.Context) {
 		if err == usecase.ErrProductNotFound { // Use a defined error from the usecase layer
 			helper_handler.SendErrorResponse(c, http.StatusNotFound, consts.ErrProductNotFound)
 		} else {
-			utility.LogError(consts.ErrFailedUpdate, strconv.Itoa(int(id)), err)
+			// Ensure the ID fits within int range before converting
+			if id <= uint64(math.MaxInt) {
+				utility.LogError(consts.ErrFailedUpdate, strconv.Itoa(int(id)), err)
+			} else {
+				utility.LogError(consts.ErrFailedUpdate, idParam, err) // Use original string if too large
+			}
 			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedUpdate)
 		}
 		return

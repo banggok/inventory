@@ -1,9 +1,10 @@
 package entity
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"errors"
-	"math/rand"
-	"strconv"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -22,16 +23,43 @@ type Product struct {
 
 // NewProduct creates a new Product instance and initializes the Name, SKU, and timestamps
 func NewProduct(name string) (*Product, error) {
+	return NewProductWithCustomGenerator(name, rand.Read) // Default to using rand.Read for random number generation
+}
+
+// generateSKUWithCustomGenerator generates an SKU with a custom random function
+func generateSKUWithCustomGenerator(name string, randomNumberGenerator func([]byte) (int, error)) (string, error) {
+	// Get the first 3 letters of the name, convert to uppercase
+	namePart := strings.ToUpper(name)
+	if len(namePart) > 3 {
+		namePart = namePart[:3] // Take the first 3 characters
+	}
+
+	// Generate a secure random 5-digit number
+	randomPart, err := generateSecureFiveDigitNumber(randomNumberGenerator)
+	if err != nil {
+		return "", err
+	}
+
+	// Combine the name part and the random part to form the SKU
+	return "SKU-" + namePart + "-" + randomPart, nil
+}
+
+// NewProductWithCustomGenerator creates a new Product with a custom random number generator (for testing)
+func NewProductWithCustomGenerator(name string, randomNumberGenerator func([]byte) (int, error)) (*Product, error) {
 	if name == "" {
 		return nil, errors.New(ErrEmptyName) // Use constant for empty name check
 	}
 
 	currentTime := time.Now()
 
+	sku, err := generateSKUWithCustomGenerator(name, randomNumberGenerator)
+	if err != nil {
+		return nil, err
+	}
 	product := &Product{
 		id:        0, // Assign default ID (can change as needed)
 		name:      name,
-		sku:       generateSKU(name), // Generate SKU when creating the product
+		sku:       sku, // Generate SKU when creating the product
 		createdAt: currentTime,
 		updatedAt: currentTime,
 	}
@@ -52,22 +80,24 @@ func (p *Product) MakeProduct(id uint, name string, sku string, createdAt, updat
 	return nil
 }
 
-// generateSKU generates an SKU based on the product name and a random number
-func generateSKU(name string) string {
-	// Use rand.New with a source based on time to avoid deprecation
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+// generateSecureFiveDigitNumber generates a cryptographically secure 5-digit number
+func generateSecureFiveDigitNumber(randomNumberGenerator func([]byte) (int, error)) (string, error) {
+	// Create a byte slice for random bytes
+	b := make([]byte, 8) // 8 bytes for a 64-bit unsigned int
 
-	// Get the first 3 letters of the name, convert to uppercase
-	namePart := strings.ToUpper(name)
-	if len(namePart) > 3 {
-		namePart = namePart[:3] // Take the first 3 characters
+	// Read cryptographically secure random bytes
+	_, err := randomNumberGenerator(b)
+	if err != nil {
+		return "", err
 	}
 
-	// Generate a random number between 10000 and 99999 for the SKU
-	randomPart := r.Intn(90000) + 10000 // Ensures it's a 5-digit number
+	// Convert the bytes to a large integer
+	randomInt := binary.BigEndian.Uint64(b)
 
-	// Combine the name part and the random part to form the SKU
-	return "SKU-" + namePart + "-" + strconv.Itoa(randomPart)
+	// Take the last 5 digits of the random integer
+	randomString := fmt.Sprintf("%05d", randomInt%100000)
+
+	return randomString, nil
 }
 
 // ID returns the ID of the product
