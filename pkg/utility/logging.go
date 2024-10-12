@@ -10,10 +10,9 @@ func LogError(action, name string, err error) {
 	}).Error(action)
 }
 
-// LogSuccess logs successful operations with action and context
-func LogSuccess(action string, id uint, name string) {
+// LogSuccess logs a success message with dynamic data
+func LogSuccess(message string, data ...interface{}) {
 	log.WithFields(log.Fields{
-		"id":   id,
-		"name": name,
-	}).Info(action)
+		"data": data,
+	}).Info(message)
 }

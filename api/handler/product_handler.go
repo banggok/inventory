@@ -7,9 +7,7 @@ import (
 	"inventory_management/api/handler/transformer"
 	"inventory_management/internal/usecase"
 	"inventory_management/pkg/utility"
-	"math"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,92 +23,125 @@ func NewProductHandler(u usecase.ProductUsecase) *ProductHandler {
 // CreateProduct handles the creation of a new product
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	var req dto.CreateProductRequest
-	if validationErrors, err := helper_handler.ReadAndValidateRequestBody(c, &req); validationErrors != nil {
-		helper_handler.SendErrorResponse(c, http.StatusUnprocessableEntity, validationErrors)
-		return
-	} else if err != nil {
-		helper_handler.SendErrorResponse(c, http.StatusBadRequest, "Invalid request body")
+
+	// Read and validate the request body
+	validationErrors, err := helper_handler.ReadAndValidateRequestBody(c, &req)
+	if validationErrors != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": validationErrors})
 		return
 	}
 
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
+		return
+	}
+
+	// Create product using the usecase
 	product, err := h.productUsecase.CreateProduct(req.Name)
 	if err != nil {
-		utility.LogError(consts.ErrFailedCreate, req.Name, err)
-		helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedCreate)
+		// If there's an error creating the product, return the correct error message
+		helper_handler.HandleErrorResponse(c, err, consts.ErrFailedCreate, http.StatusInternalServerError)
 		return
 	}
 
+	// Transform and send a success response
 	productResponse := transformer.TransformProductEntityToResponse(product)
-	utility.LogSuccess("Product created successfully", product.ID(), product.Name())
+	utility.LogSuccess("product created successfully", product.ID(), product.Name())
 	c.JSON(http.StatusCreated, productResponse)
 }
 
 // GetProduct retrieves a product by its ID
 func (h *ProductHandler) GetProduct(c *gin.Context) {
-	idParam := c.Param("id")
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil || id == 0 {
-		utility.LogError(consts.ErrInvalidProductID, idParam, err)
-		helper_handler.SendErrorResponse(c, http.StatusBadRequest, consts.ErrInvalidProductID)
+	id, err := helper_handler.ParseIDFromParam(c)
+	if err != nil {
+		helper_handler.HandleErrorResponse(c, err, consts.ErrInvalidProductID, http.StatusBadRequest)
 		return
 	}
 
-	product, err := h.productUsecase.GetProductByID(uint(id))
+	product, err := h.productUsecase.GetProductByID(id)
 	if err != nil {
-		if err == usecase.ErrProductNotFound { // Use a defined error from the usecase layer
-			helper_handler.SendErrorResponse(c, http.StatusNotFound, consts.ErrProductNotFound)
+		if err == usecase.ErrProductNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"errors": consts.ErrProductNotFound})
 		} else {
-			// Ensure the ID fits within int range before converting
-			if id <= uint64(math.MaxInt) {
-				utility.LogError(consts.ErrFailedRetrieve, strconv.Itoa(int(id)), err)
-			} else {
-				utility.LogError(consts.ErrFailedRetrieve, idParam, err) // Use original string if too large
-			}
-			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedRetrieve)
+			helper_handler.HandleErrorResponse(c, err, consts.ErrFailedRetrieve, http.StatusInternalServerError)
 		}
 		return
 	}
 
 	productResponse := transformer.TransformProductEntityToResponse(product)
-	utility.LogSuccess("Product retrieved", product.ID(), product.Name())
+	utility.LogSuccess("product retrieved successfully", product.ID(), product.Name())
 	c.JSON(http.StatusOK, productResponse)
 }
 
 // UpdateProductName handles updating a product's name
 func (h *ProductHandler) UpdateProductName(c *gin.Context) {
 	var req dto.UpdateProductRequest
-	if validationErrors, err := helper_handler.ReadAndValidateRequestBody(c, &req); validationErrors != nil {
-		helper_handler.SendErrorResponse(c, http.StatusUnprocessableEntity, validationErrors)
-		return
-	} else if err != nil {
-		helper_handler.SendErrorResponse(c, http.StatusBadRequest, "Invalid request body")
+
+	validationErrors, err := helper_handler.ReadAndValidateRequestBody(c, &req)
+	if validationErrors != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": validationErrors})
 		return
 	}
 
-	idParam := c.Param("id")
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil || id == 0 {
-		helper_handler.SendErrorResponse(c, http.StatusBadRequest, consts.ErrInvalidProductID)
-		return
-	}
-
-	product, err := h.productUsecase.UpdateProductName(uint(id), req.Name)
 	if err != nil {
-		if err == usecase.ErrProductNotFound { // Use a defined error from the usecase layer
-			helper_handler.SendErrorResponse(c, http.StatusNotFound, consts.ErrProductNotFound)
+		c.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
+		return
+	}
+
+	id, err := helper_handler.ParseIDFromParam(c)
+	if err != nil {
+		helper_handler.HandleErrorResponse(c, err, consts.ErrInvalidProductID, http.StatusBadRequest)
+		return
+	}
+
+	product, err := h.productUsecase.UpdateProductName(id, req.Name)
+	if err != nil {
+		if err == usecase.ErrProductNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"errors": consts.ErrProductNotFound})
 		} else {
-			// Ensure the ID fits within int range before converting
-			if id <= uint64(math.MaxInt) {
-				utility.LogError(consts.ErrFailedUpdate, strconv.Itoa(int(id)), err)
-			} else {
-				utility.LogError(consts.ErrFailedUpdate, idParam, err) // Use original string if too large
-			}
-			helper_handler.SendErrorResponse(c, http.StatusInternalServerError, consts.ErrFailedUpdate)
+			helper_handler.HandleErrorResponse(c, err, consts.ErrFailedUpdate, http.StatusInternalServerError)
 		}
 		return
 	}
 
 	productResponse := transformer.TransformProductEntityToResponse(product)
-	utility.LogSuccess("Product updated successfully", product.ID(), product.Name())
+	utility.LogSuccess("product updated successfully", product.ID(), product.Name())
 	c.JSON(http.StatusOK, productResponse)
+}
+
+// GetProductList handles listing products with filters, sorting, and pagination
+func (h *ProductHandler) GetProductList(c *gin.Context) {
+	queryParams := dto.ProductListQueryParams{}
+
+	// Perform validation manually
+	validationErrors := queryParams.Validate(c.Request.URL.Query())
+	if validationErrors != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"errors": validationErrors})
+		return
+	}
+
+	// Fetch the products based on filters, sorting, and pagination
+	products, err := h.productUsecase.ListProducts(
+		queryParams.SearchTerm,
+		queryParams.SortBy,
+		queryParams.SortDirection,
+		queryParams.Limit,
+		queryParams.Offset,
+	)
+	if err != nil {
+		helper_handler.HandleErrorResponse(c, err, consts.ErrFailedRetrieve, http.StatusInternalServerError)
+		return
+	}
+
+	// Transform the products to response DTOs
+	productResponses := make([]*dto.ProductResponse, len(products))
+	for i, product := range products {
+		productResponses[i] = transformer.TransformProductEntityToResponse(product)
+	}
+
+	utility.LogSuccess("product list retrieved successfully", len(products), "products")
+	c.JSON(http.StatusOK, gin.H{
+		"products": productResponses,
+		"total":    len(products),
+	})
 }

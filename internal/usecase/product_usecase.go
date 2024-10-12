@@ -10,6 +10,7 @@ type ProductUsecase interface {
 	CreateProduct(name string) (*entity.Product, error)
 	GetProductByID(id uint) (*entity.Product, error)
 	UpdateProductName(id uint, name string) (*entity.Product, error)
+	ListProducts(searchTerm string, sortBy string, sortDirection string, limit int, offset int) ([]*entity.Product, error)
 }
 
 type productUsecase struct {
@@ -62,4 +63,8 @@ func (u *productUsecase) UpdateProductName(id uint, name string) (*entity.Produc
 	}
 
 	return product, nil
+}
+
+func (u *productUsecase) ListProducts(searchTerm string, sortBy string, sortDirection string, limit int, offset int) ([]*entity.Product, error) {
+	return u.productRepo.ListProducts(searchTerm, sortBy, sortDirection, limit, offset)
 }

@@ -12,6 +12,12 @@ import (
 type DB interface {
 	Save(value interface{}) *gorm.DB
 	First(dest interface{}, conds ...interface{}) *gorm.DB
+	Model(value interface{}) *gorm.DB // Add Model method
+	Where(query interface{}, args ...interface{}) *gorm.DB
+	Order(value interface{}) *gorm.DB
+	Limit(value int) *gorm.DB
+	Offset(value int) *gorm.DB
+	Find(dest interface{}, conds ...interface{}) *gorm.DB
 }
 
 // ErrProductNotFound is returned when a product is not found in the database
@@ -20,6 +26,7 @@ var ErrProductNotFound = errors.New("product not found")
 type PostgresProductRepository interface {
 	Save(p *entity.Product) error
 	FindByID(id uint) (*entity.Product, error)
+	ListProducts(searchTerm string, sortBy string, sortDirection string, limit int, offset int) ([]*entity.Product, error)
 }
 
 type postgresProductRepository struct {
@@ -62,6 +69,39 @@ func (r *postgresProductRepository) FindByID(id uint) (*entity.Product, error) {
 		return nil, err
 	}
 	return modelToEntity(&modelProduct)
+}
+
+// New method to list products with search, sorting, and pagination
+func (r *postgresProductRepository) ListProducts(searchTerm string, sortBy string, sortDirection string, limit int, offset int) ([]*entity.Product, error) {
+	var modelProducts []model.Product
+
+	query := r.DB.Model(&model.Product{})
+
+	// Apply search filter if a search term is provided
+	if searchTerm != "" {
+		query = query.Where("name LIKE ? OR sku LIKE ?", "%"+searchTerm+"%", "%"+searchTerm+"%")
+	}
+
+	// Apply sorting
+	query = query.Order(sortBy + " " + sortDirection)
+
+	// Apply pagination
+	err := query.Limit(limit).Offset(offset).Find(&modelProducts).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert modelProducts to entity.Products
+	entityProducts := make([]*entity.Product, len(modelProducts))
+	for i, modelProduct := range modelProducts {
+		entityProduct, err := modelToEntity(&modelProduct)
+		if err != nil {
+			return nil, err
+		}
+		entityProducts[i] = entityProduct
+	}
+
+	return entityProducts, nil
 }
 
 // Convert entity.Product to model.Product for saving to the database

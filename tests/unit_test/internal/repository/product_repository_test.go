@@ -30,6 +30,42 @@ func (m *MockDB) First(dest interface{}, conds ...interface{}) *gorm.DB {
 	return &gorm.DB{Error: args.Error(0)}
 }
 
+// Mock Model function for gorm.DB
+func (m *MockDB) Model(value interface{}) *gorm.DB {
+	args := m.Called(value)
+	return &gorm.DB{Error: args.Error(0)}
+}
+
+// Mock Where function for gorm.DB
+func (m *MockDB) Where(query interface{}, args ...interface{}) *gorm.DB {
+	mockArgs := m.Called(append([]interface{}{query}, args...)...)
+	return &gorm.DB{Error: mockArgs.Error(0)}
+}
+
+// Mock Order function for gorm.DB
+func (m *MockDB) Order(value interface{}) *gorm.DB {
+	args := m.Called(value)
+	return &gorm.DB{Error: args.Error(0)}
+}
+
+// Mock Limit function for gorm.DB
+func (m *MockDB) Limit(value int) *gorm.DB {
+	args := m.Called(value)
+	return &gorm.DB{Error: args.Error(0)}
+}
+
+// Mock Offset function for gorm.DB
+func (m *MockDB) Offset(value int) *gorm.DB {
+	args := m.Called(value)
+	return &gorm.DB{Error: args.Error(0)}
+}
+
+// Mock Find function for gorm.DB
+func (m *MockDB) Find(dest interface{}, conds ...interface{}) *gorm.DB {
+	args := m.Called(append([]interface{}{dest}, conds...)...)
+	return &gorm.DB{Error: args.Error(0)}
+}
+
 // TestPostgresProductRepository_Save tests the Save method
 func TestPostgresProductRepository_Save(t *testing.T) {
 	mockDB := new(MockDB) // Fresh mock object for this test

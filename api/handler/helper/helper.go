@@ -2,16 +2,16 @@ package helper_handler
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	consts "inventory_management/api/handler/const"
 	"inventory_management/api/handler/dto"
+	"inventory_management/pkg/utility"
 	"io"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
-
-// SendErrorResponse sends a consistent error response. It can handle both string and map errors.
-func SendErrorResponse(c *gin.Context, statusCode int, message interface{}) {
-	c.JSON(statusCode, gin.H{"errors": message})
-}
 
 // ReadAndValidateRequestBody reads the request body, validates it, and returns validation errors if any.
 // It returns nil if validation succeeds.
@@ -19,12 +19,12 @@ func ReadAndValidateRequestBody(c *gin.Context, request dto.Validator) (map[stri
 	// Read the request body using io.ReadAll instead of ioutil.ReadAll
 	rawBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		return map[string]string{"error": "Invalid request body"}, err
+		return nil, errors.New("invalid request body")
 	}
 
 	// Unmarshal the raw body into the request structure
 	if err := json.Unmarshal(rawBody, request); err != nil {
-		return map[string]string{"error": "Invalid JSON format"}, err
+		return nil, errors.New("invalid JSON format")
 	}
 
 	// Validate the request body after it has been populated
@@ -36,4 +36,20 @@ func ReadAndValidateRequestBody(c *gin.Context, request dto.Validator) (map[stri
 
 	// Return nil if no validation errors
 	return nil, nil
+}
+
+// ParseIDFromParam extracts and validates the ID from URL parameters.
+func ParseIDFromParam(c *gin.Context) (uint, error) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil || id == 0 {
+		return 0, fmt.Errorf("%s: %v", consts.ErrInvalidProductID, err)
+	}
+	return uint(id), nil
+}
+
+// HandleErrorResponse is a reusable function to handle error responses and logging.
+func HandleErrorResponse(c *gin.Context, err error, errorMessage string, statusCode int) {
+	utility.LogError(errorMessage, "", err)
+	c.JSON(statusCode, gin.H{"errors": errorMessage})
 }

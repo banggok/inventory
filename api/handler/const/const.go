@@ -2,9 +2,10 @@ package consts
 
 // Error messages
 const (
-	ErrInvalidProductID = "Invalid product ID"
-	ErrProductNotFound  = "Product not found"
-	ErrFailedCreate     = "Failed to create product"
-	ErrFailedUpdate     = "Failed to update product"
-	ErrFailedRetrieve   = "Failed to retrieve product"
+	ErrInvalidProductID   = "invalid product ID"
+	ErrProductNotFound    = "product not found"
+	ErrFailedCreate       = "failed to create product"
+	ErrFailedUpdate       = "failed to update product"
+	ErrFailedRetrieve     = "failed to retrieve product"
+	ErrInvalidRequestBody = "invalid request body" // New constant for invalid request body
 )

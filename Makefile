@@ -34,7 +34,7 @@ rollback: check-containers
 .PHONY: test
 test: check-containers
 	@echo "Running E2E tests with coverage..."
-	$(GINKGO) -r -cover -coverpkg=./... -coverprofile=$(COVERAGE_OUT)
+	$(GINKGO) -r -race -cover -coverpkg=./... -coverprofile=$(COVERAGE_OUT)
 
 # Open the coverage report in HTML format
 .PHONY: coverage
